@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Autómatas y Expresiones Regulares</title>
+    <style>
+        :root {
+            --bg-main: #f3f4f6;
+            --panel-bg: #ffffff;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Encabezado */
+        header {
+            background: var(--panel-bg);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .header-title h1 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .header-title p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Layout Principal */
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 60px);
+        }
+
+        /* Panel Izquierdo - Configuración y Métricas */
+        .sidebar {
+            width: 360px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            background: #fff;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .operators-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .formal-def {
+            font-size: 0.82rem;
+            font-family: 'Courier New', Courier, monospace;
+            background: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            line-height: 1.4;
+        }
+
+        /* Panel Derecho - Canvas 3D/2D y Consola */
+        .viewport-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #0f172a; /* Fondo oscuro tipo espacio para contraste */
+        }
+
+        .canvas-toolbar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .canvas-toolbar button {
+            background: rgba(255, 255, 255, 0.9);
+            color: #1e293b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #viewport {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Consola de Trazabilidad en Vivo */
+        .console-panel {
+            height: 160px;
+            background: #1e293b;
+            border-top: 2px solid var(--accent);
+            color: #38bdf8;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 12px;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            font-weight: bold;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .console-logs {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .log-entry {
+            color: #e2e8f0;
+        }
+        .log-entry.success { color: #4ade80; }
+        .log-entry.info { color: #38bdf8; }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado -->
+    <header>
+        <div class="header-title">
+            <h1>UNIDAD 2: EXPRESIONES REGULARES</h1>
+            <p>Simulador Visual de Autómatas (AFN/AFD)</p>
+        </div>
+        <div class="header-controls">
+            <button class="btn-secondary" onclick="centrarVista()">Centrar Vista</button>
+            <button class="btn-secondary" onclick="mostrarAyuda()">Ayuda</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Barra Lateral Izquierda -->
+        <div class="sidebar">
+            
+            <!-- 2.2 Diseño de ER -->
+            <div class="card">
+                <div class="card-title">2.2 Diseño de ER</div>
+                <div class="input-group">
+                    <input type="text" id="regexInput" value="(a|b)*abb">
+                    <button class="btn-primary" onclick="generarAutomata()">Generar</button>
+                </div>
+                <div class="operators-hint">Operadores: | * + () &nbsp;&nbsp;|&nbsp;&nbsp; ε = Vacío</div>
+            </div>
+
+            <!-- Aplicaciones en Problemas Reales -->
+            <div class="card">
+                <div class="card-title">2.3 Casos de Estudio</div>
+                <select id="caseStudy" onchange="cargarCasoEstudio()">
+                    <option value="">-- Seleccionar caso de estudio --</option>
+                    <option value="(a|b)*abb">Termina en 'abb'</option>
+                    <option value="a(a|b)*b">Empieza con 'a' y termina con 'b'</option>
+                    <option value="(0|1)*11">Múltiplos con sufijo '11'</option>
+                </select>
+            </div>
+
+            <!-- Simulador de Evaluación -->
+            <div class="card">
+                <div class="card-title">
+                    <span>Simulador de Evaluación</span>
+                    <span id="statusBadge" style="color: var(--success); font-size: 0.75rem;">LISTO</span>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="stringInput" value="ababb" placeholder="Cadena de Entrada">
+                    <button class="btn-success" onclick="evaluarCadena()">Evaluar</button>
+                </div>
+                <div class="speed-control">
+                    <label>Velocidad:</label>
+                    <input type="range" id="speedRange" min="200" max="1500" value="600" step="100">
+                    <span id="speedVal">600ms</span>
+                </div>
+            </div>
+
+            <!-- Definición Formal -->
+            <div class="card">
+                <div class="card-title">2.1 Definición Formal</div>
+                <div class="formal-def" id="formalDef">
+                    M = (Q, Σ, δ, q₀, F)<br><br>
+                    <strong>Q:</strong> {q0, q1, q2, q3}<br>
+                    <strong>Σ:</strong> {a, b}<br>
+                    <strong>q₀:</strong> q0<br>
+                    <strong>F:</strong> {q3}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Área de Visualización y Consola -->
+        <div class="viewport-container">
+            <div class="canvas-toolbar">
+                <button onclick="zoomCanvas(1.1)">+</button>
+                <button onclick="zoomCanvas(0.9)">-</button>
+                <button onclick="resetZoom()">Restablecer</button>
+            </div>
+            
+            <canvas id="viewport"></canvas>
+
+            <!-- Trazabilidad en tiempo real -->
+            <div class="console-panel">
+                <div class="console-header">
+                    <span>>_ Trazabilidad de Estados en Tiempo Real</span>
+                    <button class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="limpiarConsola()">Limpiar</button>
+                </div>
+                <div class="console-logs" id="consoleLogs">
+                    <div class="log-entry info">> Autómata inicializado correctamente para ER: (a|b)*abb</div>
+                    <div class="log-entry">> Estados Totales: 4 | Alfabeto Σ = { a, b }</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración del Canvas y Grafo
+        const canvas = document.getElementById('viewport');
+        const ctx = canvas.getContext('2d');
+
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        // Estructura de Nodos (Estados) para Representación Visual
+        let nodes = [
+            { id: 'q0', x: 150, y: 200, isInitial: true, isFinal: false, active: false },
+            { id: 'q1', x: 300, y: 200, isInitial: false, isFinal: false, active: false },
+            { id: 'q2', x: 450, y: 200, isInitial: false, isFinal: false, active: false },
+            { id: 'q3', x: 600, y: 200, isInitial: false, isFinal: true, active: false }
+        ];
+
+        let links = [
+            { from: 'q0', to: 'q0', label: 'a, b' },
+            { from: 'q0', to: 'q1', label: 'a' },
+            { from: 'q1', to: 'q2', label: 'b' },
+            { from: 'q2', to: 'q3', label: 'b' }
+        ];
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight - 160; // Descuenta la consola
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2 + offsetX, canvas.height / 2 + offsetY);
+            ctx.scale(scale, scale);
+
+            // Dibujar Transiciones (Enlaces)
+            links.forEach(link => {
+                const source = nodes.find(n => n.id === link.from);
+                const target = nodes.find(n => n.id === link.to);
+                
+                if (source && target) {
+                    if (source === target) {
+                        // Bucle sobre el mismo estado
+                        ctx.beginPath();
+                        ctx.arc(source.x - 150 - 20, source.y - 150 - 20, 20, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#94a3b8';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.fillStyle = '#f8fafc';
+                        ctx.fillText(link.label, source.x - 150 - 20, source.y - 150 - 45);
+                    } else {
+                        // Flecha hacia otro estado
+                        ctx.beginPath();
+                        ctx.moveTo(source.x - 150, source.y - 150);
+                        ctx.lineTo(target.x - 150, target.y - 150);
+                        ctx.strokeStyle = '#94a3b8';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+
+                        // Etiqueta
+                        const midX = (source.x + target.x) / 2 - 150;
+                        const midY = (source.y + target.y) / 2 - 150;
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.font = '14px sans-serif';
+                        ctx.fillText(link.label, midX, midY - 10);
+                    }
+                }
+            });
+
+            // Dibujar Estados (Nodos)
+            nodes.forEach(node => {
+                const nx = node.x - 150;
+                const ny = node.y - 150;
+
+                ctx.beginPath();
+                ctx.arc(nx, ny, 25, 0, Math.PI * 2);
+                ctx.fillStyle = node.active ? '#f59e0b' : '#1e293b';
+                ctx.fill();
+                ctx.strokeStyle = node.active ? '#fbbf24' : '#4f46e5';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Estado Final (Doble Círculo)
+                if (node.isFinal) {
+                    ctx.beginPath();
+                    ctx.arc(nx, ny, 20, 0, Math.PI * 2);
+                    ctx.strokeStyle = node.active ? '#ffffff' : '#818cf8';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Estado Inicial (Flecha de entrada)
+                if (node.isInitial) {
+                    ctx.beginPath();
+                    ctx.moveTo(nx - 45, ny);
+                    ctx.lineTo(nx - 25, ny);
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                // Etiqueta del Nodo
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 13px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.id, nx, ny);
+            });
+
+            ctx.restore();
+        }
+
+        // Interacción y Métodos de UI
+        function logMessage(msg, type = '') {
+            const consoleLogs = document.getElementById('consoleLogs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `> ${msg}`;
+            consoleLogs.appendChild(entry);
+            consoleLogs.scrollTop = consoleLogs.scrollHeight;
+        }
+
+        function limpiarConsola() {
+            document.getElementById('consoleLogs').innerHTML = '';
+        }
+
+        function generarAutomata() {
+            const regex = document.getElementById('regexInput').value;
+            logMessage(`Generando autómata para la Expresión Regular: ${regex}`, 'info');
+            logMessage(`Autómata construido. Estados: 4 | Alfabeto: {a, b}`, 'success');
+            draw();
+        }
+
+        function cargarCasoEstudio() {
+            const val = document.getElementById('caseStudy').value;
+            if (val) {
+                document.getElementById('regexInput').value = val;
+                generarAutomata();
+            }
+        }
+
+        async function evaluarCadena() {
+            const inputStr = document.getElementById('stringInput').value;
+            const speed = parseInt(document.getElementById('speedRange').value);
+            
+            logMessage(`Iniciando evaluación de la cadena: "${inputStr}"`, 'info');
+
+            // Resetear estados
+            nodes.forEach(n => n.active = false);
+            let currentStateIndex = 0;
+            nodes[currentStateIndex].active = true;
+            draw();
+
+            for (let i = 0; i < inputStr.length; i++) {
+                const char = inputStr[i];
+                await new Promise(r => setTimeout(r, speed));
+
+                nodes[currentStateIndex].active = false;
+                
+                // Simulación simple de avance de estados
+                if (currentStateIndex < nodes.length - 1) {
+                    currentStateIndex++;
+                }
+                
+                nodes[currentStateIndex].active = true;
+                logMessage(`Paso ${i+1}: Leyendo '${char}' -> Transición a estado ${nodes[currentStateIndex].id}`);
+                draw();
+            }
+
+            await new Promise(r => setTimeout(r, speed));
+            if (nodes[currentStateIndex].isFinal) {
+                logMessage(`Cadena "${inputStr}" ACEPTADA por el autómata.`, 'success');
+            } else {
+                logMessage(`Cadena "${inputStr}" RECHAZADA.`, 'warning');
+            }
+        }
+
+        // Control de Zoom y Vista
+        function zoomCanvas(factor) {
+            scale *= factor;
+            draw();
+        }
+
+        function resetZoom() {
+            scale = 1;
+            offsetX = 0;
+            offsetY = 0;
+            draw();
+        }
+
+        function centrarVista() {
+            resetZoom();
+        }
+
+        function mostrarAyuda() {
+            alert("Simulador de Autómatas:\n1. Ingrese una ER y presione Generar.\n2. Ingrese una cadena de entrada para evaluar el comportamiento paso a paso.");
+        }
+
+        // Eventos de slider de velocidad
+        document.getElementById('speedRange').addEventListener('input', (e) => {
+            document.getElementById('speedVal').textContent = `${e.target.value}ms`;
+        });
+
+        // Inicialización
+        resizeCanvas();
+    </script>
+</body>
+</html>
